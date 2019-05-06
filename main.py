@@ -1,13 +1,14 @@
 import pymysql
 import math
 import operator
+import json
 from nltk.tokenize import word_tokenize
 
-conn = pymysql.connect(host = 's.snu.ac.kr',
-                        port = 3306,
-                        user = '',
-                        password='',
-                        db = '')
+fp = open("database.json")
+config = json.load(fp)
+fp.close()
+
+conn = pymysql.connect(host = config['host'], port = config['port'], user = config['user'], password=config['password'], db = config['database'])
 
 def execute_sql(file_name):
     sql_file = open(file_name, 'r').readlines()

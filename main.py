@@ -30,8 +30,8 @@ cursor = conn.cursor()
 #============================================================
 #                 Creating LINK, SQL Table
 #============================================================
-execute_sql("link.sql")
-execute_sql("wiki.sql")
+#execute_sql("link.sql")
+#execute_sql("wiki.sql")
 #============================================================
 
 
@@ -196,7 +196,7 @@ print('ready to search')
         
         
 while True:
-    terms  = input("1234-12345>").split()
+    terms  = input("2018-22788>").split()
     terms2 = []
     for term in terms:
         for word in InvIdxTable:

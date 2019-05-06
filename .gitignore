@@ -6,7 +6,7 @@ __pycache__/
 # C extensions
 *.so
 
-database.config
+database.json
 
 # Distribution / packaging
 .Python

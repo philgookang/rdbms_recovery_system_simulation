@@ -237,6 +237,9 @@ def recover(cursor, num):
             continue # <-------------------------------------------
         elif log[1] == 'start':
             active_list[log[0]] = 1
+
+            write_to_log('<{0},start>'.format(log[0]))
+
         elif log[1] == 'abort':
 
             # call rollback recursivelty
@@ -244,11 +247,16 @@ def recover(cursor, num):
 
             completed_list[log[0]] = 1
             del active_list[log[0]]
+
+            write_to_log('<{0},abort>'.format(log[0]))
+
         elif log[1] == 'commit':
             completed_list[log[0]] = 1
             del active_list[log[0]]
+
+            write_to_log('<{0},commit>'.format(log[0]))
         else:
-            redo_log(cursor, log)
+            redo_log(cursor, log, True)
 
     keys = ""
     for i,key in enumerate(completed_list):
@@ -275,26 +283,39 @@ def recover(cursor, num):
             # found trasnaction starting point so remove it from list
             if log[1] == 'start':
                 del active_list[log[0]]
+                write_to_log('<{0},abort>'.format(log[0]))
                 continue
-            undo_log(cursor, log)
+            undo_log(cursor, log, True)
 
-def redo_log(cursor, transaction):
+def redo_log(cursor, transaction, bool_write_to_log = False):
     sql_info = transaction[1].split('.')
     if sql_info[3] == 'delete':
         cursor.execute('UPDATE {0} SET status=0 WHERE {1}={2}'.format(sql_info[0], sql_info[2], sql_info[1]))
+
+        if bool_write_to_log:
+            write_to_log('<{0},{1}.{2}.{3}.delete.redo>'.format(transaction[0], sql_info[0], sql_info[1], sql_info[2]))
 
     elif sql_info[3] == 'update':
         query = "UPDATE {0} SET {1}=%s WHERE id=%s".format(sql_info[0], sql_info[2])
         cursor.execute(query, tuple([unquote_plus(transaction[3]), sql_info[1]]))
 
-def undo_log(cursor, transaction):
+        if bool_write_to_log:
+            write_to_log('<{0},{1}.{2}.{3}.update.redo,{4},{5}>'.format(transaction[0], sql_info[0], sql_info[1], sql_info[2], transaction[2], transaction[3]))
+
+def undo_log(cursor, transaction, bool_write_to_log = False):
     sql_info = transaction[1].split('.')
     if sql_info[3] == 'delete':
         cursor.execute('UPDATE {0} SET status=1 WHERE {1}={2}'.format(sql_info[0], sql_info[2], sql_info[1]))
 
+        if bool_write_to_log:
+            write_to_log('<{0},{1}.{2}.{3}.delete.undo>'.format(transaction[0], sql_info[0], sql_info[1], sql_info[2]))
+
     elif sql_info[3] == 'update':
         query = "UPDATE {0} SET {1}=%s WHERE id=%s".format(sql_info[0], sql_info[2])
         cursor.execute(query, tuple([unquote_plus(transaction[2]), sql_info[1]]))
+
+        if bool_write_to_log:
+            write_to_log('<{0},{1}.{2}.{3}.update.undo,{4},{5}>'.format(transaction[0], sql_info[0], sql_info[1], sql_info[2],transaction[2], transaction[3]))
 
 if os.path.exists("prj2.log"): os.remove("prj2.log")
 if os.path.exists("recovery.txt"): os.remove("recovery.txt")
@@ -311,7 +332,7 @@ cursor.execute('UPDATE wiki SET status=1')
 while True:
     terms  = input("2018-22788>").split()
     terms2 = []
-    # terms = '-run prj2.sched'.split()
+    terms = '-run prj2.sched'.split()
     active_transaction_list = {  }
 
     if terms[0] == "-run":
@@ -321,6 +342,7 @@ while True:
                 line = line.strip()
                 if line == 'system failure - recover':
                     recover(cursor, num)
+                    write_to_log('<checkpoint>')
                     InvIdxTable, TFIDF, PageRank, id_title = homework_one(cursor)
                     # =====
                     active_transaction_list = { }

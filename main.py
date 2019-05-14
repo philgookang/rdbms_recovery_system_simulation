@@ -332,7 +332,7 @@ cursor.execute('UPDATE wiki SET status=1')
 while True:
     terms  = input("2018-22788>").split()
     terms2 = []
-    terms = '-run prj2.sched'.split()
+    # terms = '-run prj2.sched'.split()
     active_transaction_list = {  }
 
     if terms[0] == "-run":
